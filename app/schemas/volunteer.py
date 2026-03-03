@@ -13,9 +13,9 @@ class VolunteerBase(BaseModel):
     phone_number: str
 
 class VolunteerCreate(VolunteerBase):
-    # Optionnel : si tu veux envoyer les IDs directement à la création
-    # On verra dans le CRUD comment transformer ça en vraies liaisons
-    pass
+    preference_ids: List[int] = [] 
+    slot_ids: List[int] = []
+    mate_ids: Optional[List[UUID]] = None
 
 class VolunteerResponse(VolunteerBase):
     id: UUID
