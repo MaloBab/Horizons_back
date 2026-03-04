@@ -1,6 +1,6 @@
 # app/schemas/__init__.py
 
-from .user import UserCreate, UserResponse, UserRole, UserBase, UserShortResponse
+from .user import UserCreate, UserUpdate, UserResponse, UserRole, UserBase, UserShortResponse
 from .activity import ActivityCreate, ActivityResponse, ActivityBase
 from .category import CategoryCreate, CategoryResponse, CategoryBase
 from .slot import SlotCreate, SlotResponse, SlotBase
@@ -19,7 +19,7 @@ from .volunteer import VolunteerCreate, VolunteerResponse, VolunteerBase, Volunt
 from .assignment import AssignmentCreate, AssignmentResponse, AssignmentBase
 
 __all__ = [
-    "UserCreate", "UserResponse", "UserRole", "UserBase", "UserShortResponse",
+    "UserCreate", "UserUpdate", "UserResponse", "UserRole", "UserBase", "UserShortResponse",
     "ActivityCreate", "ActivityResponse", "ActivityBase",
     "VolunteerCreate", "VolunteerResponse", "VolunteerBase", "VolunteerShortResponse",
     "CategoryCreate", "CategoryResponse", "CategoryBase",

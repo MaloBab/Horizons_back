@@ -18,7 +18,13 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str # L'utilisateur envoie "password", mais on stockera "password_hash"
 
-# 3. Champs renvoyés par l'API (Lecture)
+# 3. Champs nécessaires à la modification (Update)
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    profile_picture_url: Optional[str] = None
+
+# 4. Champs renvoyés par l'API (Lecture)
 class UserResponse(UserBase):
     id: UUID
     role: UserRole
