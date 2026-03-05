@@ -8,9 +8,7 @@ def get_activities(db: Session, skip: int = 0, limit: int = 50):
 
 def create_activity(db: Session, activity: schemas.ActivityCreate, user_id: UUID):
     db_activity = models.Activity(
-        icon=activity.icon,
-        title=activity.title,
-        action_type=activity.action_type,
+        **activity.model_dump(), 
         user_id=user_id
     )
     db.add(db_activity)
@@ -19,21 +17,21 @@ def create_activity(db: Session, activity: schemas.ActivityCreate, user_id: UUID
     return db_activity
 
 
-def delete_recent_activities(db: Session, limit: int):
-    """Supprime les 'x' (limit) activités les plus récentes du feed."""
+def delete_old_activities(db: Session, limit: int):
+    """Supprime les 'x' (limit) activités les plus anciennes du feed."""
     
-    recent_activities = db.query(models.Activity.id)\
-                          .order_by(models.Activity.created_at.desc())\
-                          .limit(limit)\
+    old_activities = db.query(models.Activity.id)\
+                       .order_by(models.Activity.created_at.asc())\
+                       .limit(limit)\
                           .all()
     
-    if not recent_activities:
+    if not old_activities:
         return 0
 
-    recent_ids = [activity.id for activity in recent_activities]
+    old_ids = [activity.id for activity in old_activities]
     
     deleted_count = db.query(models.Activity)\
-                      .filter(models.Activity.id.in_(recent_ids))\
+                      .filter(models.Activity.id.in_(old_ids))\
                       .delete(synchronize_session=False)         
     db.commit()
     
