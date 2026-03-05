@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from uuid import UUID
+import uuid
 from typing import Optional
 from .. import models, schemas
 from ..core.security import get_password_hash
@@ -54,3 +55,13 @@ def update_user(db: Session, user_id: UUID, user_update: schemas.UserUpdate) -> 
     db.commit()
     db.refresh(db_user)
     return db_user
+
+def delete_user(db: Session, user_id: UUID) -> bool:
+    """Supprime un utilisateur de la base de données."""
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not db_user:
+        return False
+    
+    db.delete(db_user)
+    db.commit()
+    return True
