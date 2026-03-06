@@ -7,3 +7,4 @@ from .slot import *
 from .user import *
 from .volunteer_links import *
 from .volunteer import *
+from .task import *

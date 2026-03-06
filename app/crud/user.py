@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from uuid import UUID
-import uuid
 from typing import Optional
 from .. import models, schemas
 from ..core.security import get_password_hash

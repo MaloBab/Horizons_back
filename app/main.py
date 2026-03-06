@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routes import task
+
 from .database import engine
 from . import models
 
@@ -8,6 +10,7 @@ from . import models
 from .routes import auth
 from .routes import user
 from .routes import activity
+from .routes import tags
 
 # Cette ligne demande à SQLAlchemy de créer toutes les tables dans PostgreSQL 
 # si elles n'existent pas encore sur ton Raspberry Pi.
@@ -39,6 +42,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(activity.router)
+app.include_router(task.router)
+app.include_router(tags.router)
 
 # Une petite route de test pour vérifier que le serveur tourne bien
 @app.get("/", tags=["Health"])
