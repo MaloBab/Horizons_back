@@ -8,6 +8,25 @@ from ..core import security
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _task_query(db: Session):
+    """Base query with all relations needed for TaskResponse pre-loaded."""
+    return (
+        db.query(models.Task)
+        .options(
+            joinedload(models.Task.tags),
+            joinedload(models.Task.subtasks),
+            joinedload(models.Task.assignee),
+        )
+    )
+
+def _get_task_or_404(db: Session, task_id: UUID) -> models.Task:
+    task = _task_query(db).filter(models.Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tâche introuvable")
+    return task
+
 
 # ── CRUD ──────────────────────────────────────────────────────────────────────
 
@@ -17,18 +36,25 @@ def create_task(
     db: Session = Depends(database.get_db),
     current_user=Depends(security.get_current_user),
 ):
-    return crud.task.create_task(db=db, task_in=task_in, creator_id=current_user.id)
+    task = crud.task.create_task(db=db, task_in=task_in, creator_id=current_user.id)
+    return _get_task_or_404(db, task.id)
 
 
 @router.get("/", response_model=List[schemas.task.TaskResponse])
 def read_tasks(
-    skip: int = 0, limit: int = 100,
+    skip: int = 0,
+    limit: int = 100,
     status: models.TaskStatus | None = None,
     assignee_id: UUID | None = None,
     db: Session = Depends(database.get_db),
     current_user=Depends(security.get_current_user),
 ):
-    return crud.task.get_tasks(db=db, skip=skip, limit=limit, status=status, assignee_id=assignee_id)
+    query = _task_query(db)
+    if status:
+        query = query.filter(models.Task.status == status)
+    if assignee_id:
+        query = query.filter(models.Task.assignee_id == assignee_id)
+    return query.offset(skip).limit(limit).all()
 
 
 @router.get("/{task_id}", response_model=schemas.task.TaskResponse)
@@ -37,10 +63,7 @@ def read_task(
     db: Session = Depends(database.get_db),
     current_user=Depends(security.get_current_user),
 ):
-    db_task = crud.task.get_task(db=db, task_id=task_id)
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Tâche introuvable")
-    return db_task
+    return _get_task_or_404(db, task_id)
 
 
 @router.put("/{task_id}", response_model=schemas.task.TaskResponse)
@@ -50,13 +73,12 @@ def update_task_full(
     db: Session = Depends(database.get_db),
     current_user=Depends(security.get_current_user),
 ):
-    db_task = crud.task.get_task(db=db, task_id=task_id)
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Tâche introuvable")
+    db_task = _get_task_or_404(db, task_id)
     try:
-        return crud.task.update_task(db=db, db_task=db_task, task_in=task_in, current_user_id=current_user.id)
+        crud.task.update_task(db=db, db_task=db_task, task_in=task_in, current_user_id=current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    return _get_task_or_404(db, task_id)
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -78,29 +100,23 @@ def change_task_status(
     db: Session = Depends(database.get_db),
     current_user=Depends(security.get_current_user),
 ):
-    db_task = crud.task.get_task(db=db, task_id=task_id)
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Tâche introuvable")
+    db_task = _get_task_or_404(db, task_id)
     task_in = schemas.task.TaskUpdate(status=new_status)
-    return crud.task.update_task(db=db, db_task=db_task, task_in=task_in, current_user_id=current_user.id)
+    crud.task.update_task(db=db, db_task=db_task, task_in=task_in, current_user_id=current_user.id)
+    return _get_task_or_404(db, task_id)
 
 
 @router.patch("/{task_id}/assign", response_model=schemas.task.TaskResponse)
 def assign_task(
     task_id: UUID,
     assignee_id: UUID | None = None,
-    verifier_id: UUID | None = None,
     db: Session = Depends(database.get_db),
     current_user=Depends(security.get_current_user),
 ):
-    db_task = crud.task.get_task(db=db, task_id=task_id)
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Tâche introuvable")
-    task_in = schemas.task.TaskUpdate(assignee_id=assignee_id, verifier_id=verifier_id)
-    try:
-        return crud.task.update_task(db=db, db_task=db_task, task_in=task_in, current_user_id=current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    db_task = _get_task_or_404(db, task_id)
+    task_in = schemas.task.TaskUpdate(assignee_id=assignee_id)
+    crud.task.update_task(db=db, db_task=db_task, task_in=task_in, current_user_id=current_user.id)
+    return _get_task_or_404(db, task_id)
 
 
 # ── Audit logs ────────────────────────────────────────────────────────────────
@@ -111,19 +127,14 @@ def get_task_history(
     db: Session = Depends(database.get_db),
     current_user=Depends(security.get_current_user),
 ):
-    db_task = crud.task.get_task(db=db, task_id=task_id)
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Tâche introuvable")
-
-    # ✅ joinedload actor so UserEmbedded is populated in the response
-    logs = (
+    _get_task_or_404(db, task_id)  # 404 guard
+    return (
         db.query(models.TaskAuditLog)
         .options(joinedload(models.TaskAuditLog.actor))
         .filter(models.TaskAuditLog.task_id == task_id)
         .order_by(models.TaskAuditLog.created_at.asc())
         .all()
     )
-    return logs
 
 
 # ── Comments ──────────────────────────────────────────────────────────────────
@@ -135,9 +146,7 @@ def add_comment(
     db: Session = Depends(database.get_db),
     current_user=Depends(security.get_current_user),
 ):
-    db_task = crud.task.get_task(db=db, task_id=task_id)
-    if not db_task:
-        raise HTTPException(status_code=404, detail="Tâche introuvable")
+    _get_task_or_404(db, task_id)  # 404 guard
 
     new_comment = models.TaskComment(
         task_id=task_id,
@@ -146,8 +155,14 @@ def add_comment(
     )
     db.add(new_comment)
     db.commit()
-    # ✅ refresh with author relation so UserEmbedded is populated
-    db.refresh(new_comment)
+
+    # db.refresh() does NOT load relationships — re-query with joinedload instead
+    new_comment = (
+        db.query(models.TaskComment)
+        .options(joinedload(models.TaskComment.author))
+        .filter(models.TaskComment.id == new_comment.id)
+        .one()
+    )
     return new_comment
 
 
@@ -157,7 +172,7 @@ def get_task_comments(
     db: Session = Depends(database.get_db),
     current_user=Depends(security.get_current_user),
 ):
-    # ✅ joinedload author so UserEmbedded is populated in every comment
+    _get_task_or_404(db, task_id)  # 404 guard
     return (
         db.query(models.TaskComment)
         .options(joinedload(models.TaskComment.author))

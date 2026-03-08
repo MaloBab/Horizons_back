@@ -47,6 +47,14 @@ class TaskCommentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SubtaskResponse(BaseModel):
+    id: int
+    title: str
+    is_completed: bool
+    position: int
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ── Tasks ─────────────────────────────────────────────────────────────────────
 
 class TaskBase(BaseModel):
@@ -58,8 +66,13 @@ class TaskBase(BaseModel):
 
 class TaskCreate(TaskBase):
     assignee_id: Optional[UUID] = None
-    verifier_id: Optional[UUID] = None
     tag_ids: Optional[List[int]] = []
+
+class SubtaskUpsert(BaseModel):
+    id: Optional[int] = None
+    title: str
+    is_completed: bool = False
+    position: int = 0
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -68,27 +81,21 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     assignee_id: Optional[UUID] = None
-    verifier_id: Optional[UUID] = None
     due_date: Optional[datetime] = None
     tag_ids: Optional[List[int]] = None
+    subtasks: Optional[List[SubtaskUpsert]] = None
 
 class TaskResponse(TaskBase):
     id: UUID
     status: TaskStatus
     creator_id: UUID
     assignee_id: Optional[UUID] = None
-    verifier_id: Optional[UUID] = None
-
-    # ✅ Embedded objects so frontend gets full user data without extra fetches
     assignee: Optional[UserEmbedded] = None
-    verifier: Optional[UserEmbedded] = None
-
     opened_at: datetime
     verification_opened_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
-
     tags: List[TagResponse] = []
-
+    subtasks: List[SubtaskResponse] = []
     model_config = ConfigDict(from_attributes=True)
 
 

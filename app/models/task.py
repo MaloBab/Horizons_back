@@ -2,11 +2,12 @@ import enum
 import uuid
 import nh3
 from datetime import datetime, timezone
+from typing import Optional
 from sqlalchemy import (
     Column, String, Text, Boolean, Integer, BigInteger,
     ForeignKey, DateTime, Enum, Table, Uuid,
 )
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import relationship, validates, Mapped, mapped_column
 
 from .base import Base
 
@@ -55,7 +56,7 @@ class Tag(Base):
 class Task(Base):
     __tablename__ = "tasks"
 
-    id          = Column(Uuid, primary_key=True, default=lambda: uuid.uuid4())
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4, index=True)
     title       = Column(String, nullable=False)
     description = Column(Text, nullable=True)
 
@@ -65,7 +66,6 @@ class Task(Base):
 
     creator_id  = Column(Uuid, ForeignKey("users.id"), nullable=False)
     assignee_id = Column(Uuid, ForeignKey("users.id"), nullable=True)
-    verifier_id = Column(Uuid, ForeignKey("users.id"), nullable=True)
 
     due_date                = Column(DateTime(timezone=True), nullable=True)
     opened_at               = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -77,6 +77,9 @@ class Task(Base):
     subtasks    = relationship("Subtask",         back_populates="task", cascade="all, delete-orphan", order_by="Subtask.position")
     attachments = relationship("TaskAttachment",  back_populates="task", cascade="all, delete-orphan")
     audit_logs  = relationship("TaskAuditLog",    back_populates="task", cascade="all, delete-orphan")
+
+    # ✅ Explicit relationships for embedded user objects in responses
+    assignee    = relationship("User", foreign_keys=[assignee_id])
 
     @validates("description")
     def sanitize_description(self, key, value):
@@ -146,4 +149,4 @@ class TaskAuditLog(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     task  = relationship("Task", back_populates="audit_logs")
-    actor = relationship("User", foreign_keys=[user_id])     
+    actor = relationship("User", foreign_keys=[user_id])      # ✅ for joinedload

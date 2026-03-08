@@ -3,18 +3,17 @@ from datetime import datetime, timezone
 from .. import schemas, models
 from uuid import UUID
 
+
 # ==========================================
 # 1. CRÉER (CREATE)
 # ==========================================
 
-def create_task(db: Session, task_in: schemas.task.TaskCreate, creator_id: UUID) -> models.Task:
-    # On extrait les données en excluant les tags pour les traiter à part
-    task_data = task_in.model_dump(exclude={"tag_ids"})
+def create_task(db: Session, task_in: schemas.task.TaskCreate, creator_id: str) -> models.Task:
+    # exclude_none évite de passer assignee_id=None, due_date=None etc. au constructeur
+    task_data = task_in.model_dump(exclude={"tag_ids"}, exclude_none=True)
 
-    # Création de l'instance avec l'ID du créateur (UUID)
     db_task = models.Task(**task_data, creator_id=creator_id)
 
-    # Gestion des Tags
     if task_in.tag_ids:
         tags = db.query(models.Tag).filter(models.Tag.id.in_(task_in.tag_ids)).all()
         db_task.tags = tags
@@ -23,7 +22,6 @@ def create_task(db: Session, task_in: schemas.task.TaskCreate, creator_id: UUID)
     db.commit()
     db.refresh(db_task)
 
-    # Log d'audit initial
     log = models.TaskAuditLog(
         task_id=db_task.id,
         user_id=creator_id,
@@ -49,16 +47,14 @@ def get_tasks(
     skip: int = 0,
     limit: int = 100,
     status: models.TaskStatus | None = None,
-    assignee_id: UUID | None = None, # ✅ Changé str en UUID
+    assignee_id: str | None = None,
 ) -> list[models.Task]:
     query = db.query(models.Task)
     if status:
         query = query.filter(models.Task.status == status)
     if assignee_id:
         query = query.filter(models.Task.assignee_id == assignee_id)
-    
-    # Tri par date de création décroissante pour le dashboard
-    return query.order_by(models.Task.opened_at.desc()).offset(skip).limit(limit).all()
+    return query.offset(skip).limit(limit).all()
 
 
 # ==========================================
@@ -71,35 +67,25 @@ def update_task(
     task_in: schemas.task.TaskUpdate,
     current_user_id: UUID,
 ) -> models.Task:
-    # exclude_unset=True est crucial pour ne pas écraser des champs par None par erreur
-    update_data = task_in.model_dump(exclude_unset=True, exclude={"tag_ids"})
+    update_data = task_in.model_dump(exclude_unset=True, exclude={"tag_ids", "subtasks"})
 
-    # Règle métier : l'assigné ne peut pas être le vérificateur
+    # Règle : l'assigné ne peut pas être le vérificateur
     new_assignee = update_data.get("assignee_id", db_task.assignee_id)
-    new_verifier = update_data.get("verifier_id", db_task.verifier_id)
-    
-    if new_verifier and new_assignee and new_verifier == new_assignee:
-        raise ValueError("L'utilisateur assigné ne peut pas vérifier sa propre tâche.")
-
-    # Gestion automatique des dates selon le statut
+    # Dates automatiques au changement de statut
     if "status" in update_data and update_data["status"] != db_task.status:
         new_status = update_data["status"]
-        if new_status == models.TaskStatus.REVIEW:
+        if new_status == models.TaskStatus.REVIEW:       # ✅ était TO_VERIFY
             update_data["verification_opened_at"] = datetime.now(timezone.utc)
         elif new_status == models.TaskStatus.CLOSED:
             update_data["closed_at"] = datetime.now(timezone.utc)
         elif new_status == models.TaskStatus.OPEN:
-            # Réouverture de la tâche
             update_data["closed_at"] = None
-            update_data["verification_opened_at"] = None
 
-    # Application des changements et génération des logs d'audit
+    # Mise à jour des champs + logs
     for key, value in update_data.items():
         old_value = getattr(db_task, key)
         if old_value != value:
             setattr(db_task, key, value)
-            
-            # On enregistre la modification dans l'audit log
             db.add(models.TaskAuditLog(
                 task_id=db_task.id,
                 user_id=current_user_id,
@@ -108,7 +94,7 @@ def update_task(
                 new_value=str(value) if value is not None else None,
             ))
 
-    # Mise à jour des tags (Many-to-Many)
+    # ✅ Correction : models.Tag  (pas models.Task.Tag)
     if task_in.tag_ids is not None:
         tags = db.query(models.Tag).filter(models.Tag.id.in_(task_in.tag_ids)).all()
         db_task.tags = tags
@@ -117,6 +103,22 @@ def update_task(
             user_id=current_user_id,
             action="tags_updated",
         ))
+
+    # ── Sous-tâches ────────────────────────────────────────────────────────────
+    if task_in.subtasks is not None:
+        # Supprime toutes les sous-tâches existantes puis recrée
+        # (stratégie simple : évite de gérer les diff id-par-id)
+        for existing in list(db_task.subtasks):
+            db.delete(existing)
+        db.flush()   # libère les ids avant d'insérer les nouveaux
+
+        for sub in task_in.subtasks:
+            db.add(models.Subtask(
+                task_id=db_task.id,
+                title=sub.title,
+                is_completed=sub.is_completed,
+                position=sub.position,
+            ))
 
     db.commit()
     db.refresh(db_task)
