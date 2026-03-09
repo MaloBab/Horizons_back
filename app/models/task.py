@@ -8,6 +8,22 @@ from sqlalchemy.orm import relationship, validates, Mapped, mapped_column
 from .base import Base
 
 
+ALLOWED_TAGS = {
+    'p', 'h1', 'h2', 'h3', 'br',
+    'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'span',
+    'ul', 'ol', 'li',
+    'table', 'tbody', 'tr', 'th', 'td'
+}
+
+ALLOWED_ATTRIBUTES = {
+    'span': {'style'},
+    'table': {'style'},
+    'th': {'style'},
+    'td': {'style'},
+    'a': {'href', 'title', 'target'} 
+}
+
+
 class TaskStatus(enum.Enum):
     OPEN      = "open"
     REVIEW    = "review"
@@ -72,7 +88,11 @@ class Task(Base):
     def sanitize_description(self, key, value):
         if value is None:
             return value
-        return nh3.clean(value)
+        return nh3.clean(
+            value, 
+            tags=ALLOWED_TAGS, 
+            attributes=ALLOWED_ATTRIBUTES
+        )
 
 
 class TaskComment(Base):
@@ -93,8 +113,11 @@ class TaskComment(Base):
     def sanitize_content(self, key, value):
         if value is None:
             return value
-        return nh3.clean(value)
-
+        return nh3.clean(
+            value, 
+            tags=ALLOWED_TAGS, 
+            attributes=ALLOWED_ATTRIBUTES
+        )
 
 class Subtask(Base):
     __tablename__ = "subtasks"
