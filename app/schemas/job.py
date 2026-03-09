@@ -3,7 +3,7 @@ from .category import CategoryResponse
 from .slot import SlotResponse
 
 class JobBase(BaseModel):
-    name: str = Field(..., min_length=1) # On s'assure que le nom n'est pas vide
+    name: str = Field(..., min_length=1)
     required_volunteers: int = Field(default=1, ge=1)
 
 class JobCreate(JobBase):

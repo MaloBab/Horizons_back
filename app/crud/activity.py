@@ -3,7 +3,6 @@ from uuid import UUID
 from .. import models, schemas
 
 def get_activities(db: Session, skip: int = 0, limit: int = 50):
-    # On trie par ordre décroissant pour avoir les plus récents en premier
     return db.query(models.Activity).order_by(models.Activity.created_at.desc()).offset(skip).limit(limit).all()
 
 def create_activity(db: Session, activity: schemas.ActivityCreate, user_id: UUID):

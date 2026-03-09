@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String
 from .base import Base
 
 class Preference(Base):
-    # Represents a grouping of categories
+    # Represents a grouping of categories (e.g. "Food", "Logistics", "Entertainment") that volunteers can rank in order of preference.
     __tablename__ = "preferences"
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)

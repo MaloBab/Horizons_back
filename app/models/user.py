@@ -10,9 +10,8 @@ class UserRole(enum.Enum):
     user = "user"
 
 class User(Base):
-    __tablename__ = "users" # Le vrai nom de la table dans la base
+    __tablename__ = "users"
 
-    # On définit les colonnes
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"), index=True)
     username = Column(String, unique=True, nullable=False, index=True)
     email = Column(String, unique=True, index=True)

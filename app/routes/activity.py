@@ -24,7 +24,7 @@ def read_activities(
 def create_new_activity(
     activity: schemas.ActivityCreate,
     db: Session = Depends(database.get_db),
-    current_user = Depends(security.get_current_user) # Sécurité : extrait l'user du token JWT
+    current_user = Depends(security.get_current_user)
 ):
     """
     Crée une activité et l'associe automatiquement à l'utilisateur connecté.

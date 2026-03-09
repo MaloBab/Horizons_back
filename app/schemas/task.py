@@ -6,7 +6,6 @@ from uuid import UUID
 from ..models import TaskStatus, TaskPriority, TaskType
 
 
-# ── Tags ──────────────────────────────────────────────────────────────────────
 
 class TagBase(BaseModel):
     name: str
@@ -20,9 +19,6 @@ class TagResponse(TagBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ── User (embedded in responses) ──────────────────────────────────────────────
-# Minimal shape used inside TaskCommentResponse and TaskAuditLogResponse
-# so the frontend doesn't need a second round-trip to resolve author/actor.
 
 class UserEmbedded(BaseModel):
     id: UUID
@@ -31,7 +27,6 @@ class UserEmbedded(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ── Comments ──────────────────────────────────────────────────────────────────
 
 class TaskCommentCreate(BaseModel):
     content: str = Field(..., min_length=1)
@@ -40,7 +35,7 @@ class TaskCommentResponse(BaseModel):
     id: int
     task_id: UUID
     author_id: UUID
-    author: UserEmbedded          # ✅ embedded so frontend gets username directly
+    author: UserEmbedded
     content: str
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -55,7 +50,6 @@ class SubtaskResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ── Tasks ─────────────────────────────────────────────────────────────────────
 
 class TaskBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
@@ -99,13 +93,12 @@ class TaskResponse(TaskBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ── Audit logs ────────────────────────────────────────────────────────────────
 
 class TaskAuditLogResponse(BaseModel):
     id: int
     task_id: UUID
     user_id: UUID
-    actor: UserEmbedded           # ✅ embedded so frontend gets username directly
+    actor: UserEmbedded
     action: str
     old_value: Optional[str] = None
     new_value: Optional[str] = None

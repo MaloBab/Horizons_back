@@ -2,22 +2,15 @@ import enum
 import uuid
 import nh3
 from datetime import datetime, timezone
-from typing import Optional
-from sqlalchemy import (
-    Column, String, Text, Boolean, Integer, BigInteger,
-    ForeignKey, DateTime, Enum, Table, Uuid,
-)
+from sqlalchemy import Column, String, Text, Boolean, Integer, BigInteger, ForeignKey, DateTime, Enum, Table, Uuid
 from sqlalchemy.orm import relationship, validates, Mapped, mapped_column
 
 from .base import Base
 
 
-# ── Enumerations ──────────────────────────────────────────────────────────────
-# Values MUST match what the frontend sends / expects.
-
 class TaskStatus(enum.Enum):
     OPEN      = "open"
-    REVIEW    = "review"   # ✅ was "to_verify" — now matches frontend
+    REVIEW    = "review"
     CLOSED    = "closed"
 
 class TaskPriority(enum.Enum):
@@ -28,10 +21,7 @@ class TaskPriority(enum.Enum):
 
 class TaskType(enum.Enum):
     STANDARD      = "standard"
-    NEEDS_REVIEW  = "needs_review"   # ✅ was "requires_verification" — now matches frontend
-
-
-# ── Association table (Task ↔ Tag, Many-to-Many) ──────────────────────────────
+    NEEDS_REVIEW  = "needs_review" 
 
 task_tags_table = Table(
     "task_tags",
@@ -41,14 +31,12 @@ task_tags_table = Table(
 )
 
 
-# ── Models ────────────────────────────────────────────────────────────────────
-
 class Tag(Base):
     __tablename__ = "tags"
 
     id        = Column(Integer, primary_key=True, index=True)
     name      = Column(String, unique=True, nullable=False)
-    color_hex = Column(String)  # ex: "#FF5733"
+    color_hex = Column(String)
 
     tasks = relationship("Task", secondary=task_tags_table, back_populates="tags")
 
@@ -77,8 +65,7 @@ class Task(Base):
     subtasks    = relationship("Subtask",         back_populates="task", cascade="all, delete-orphan", order_by="Subtask.position")
     attachments = relationship("TaskAttachment",  back_populates="task", cascade="all, delete-orphan")
     audit_logs  = relationship("TaskAuditLog",    back_populates="task", cascade="all, delete-orphan")
-
-    # ✅ Explicit relationships for embedded user objects in responses
+    
     assignee    = relationship("User", foreign_keys=[assignee_id])
 
     @validates("description")
@@ -100,7 +87,7 @@ class TaskComment(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
 
     task   = relationship("Task", back_populates="comments")
-    author = relationship("User", foreign_keys=[author_id])   # ✅ for joinedload
+    author = relationship("User", foreign_keys=[author_id])
 
     @validates("content")
     def sanitize_content(self, key, value):
@@ -149,4 +136,4 @@ class TaskAuditLog(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     task  = relationship("Task", back_populates="audit_logs")
-    actor = relationship("User", foreign_keys=[user_id])      # ✅ for joinedload
+    actor = relationship("User", foreign_keys=[user_id])

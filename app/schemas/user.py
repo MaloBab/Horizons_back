@@ -3,7 +3,6 @@ from typing import Optional
 from uuid import UUID
 from enum import Enum
 
-# On peut réutiliser l'Enum du modèle ou en redéfinir un pour Pydantic
 class UserRole(str, Enum):
     admin = "admin"
     user = "user"
@@ -33,7 +32,6 @@ class UserResponse(UserBase):
         from_attributes = True
         
 
-# Pour les activités.
 class UserShortResponse(BaseModel):
     username: str
     profile_picture_url: Optional[str] = None

@@ -1,5 +1,3 @@
-# app/schemas/__init__.py
-
 from .token import Token
 
 from .user import UserCreate, UserUpdate, UserResponse, UserRole, UserBase, UserShortResponse
@@ -9,15 +7,12 @@ from .slot import SlotCreate, SlotResponse, SlotBase
 from .preference import PreferenceCreate, PreferenceResponse, PreferenceBase
 from .job import JobCreate, JobResponse, JobBase
 
-# Liaison - On les met ici car ils dépendent des schémas ci-dessus
 from .volunteer_mate import VolunteerMateCreate, VolunteerMateResponse, VolunteerMateBase
 from .volunteer_preference import VolunteerPreferenceCreate, VolunteerPreferenceResponse, VolunteerPreferenceBase
 from .volunteer_slot import VolunteerSlotCreate, VolunteerSlotResponse, VolunteerSlotBase
 
-# Le schéma Volunteer (qui utilise les liaisons)
 from .volunteer import VolunteerCreate, VolunteerResponse, VolunteerBase, VolunteerShortResponse
 
-# L'affectation finale
 from .assignment import AssignmentCreate, AssignmentResponse, AssignmentBase
 
 from .task import TaskBase, TaskCreate, TaskUpdate, TaskResponse, TaskAuditLogResponse

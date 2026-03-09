@@ -8,8 +8,6 @@ from ..core import security
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
 def _task_query(db: Session):
     """Base query with all relations needed for TaskResponse pre-loaded."""
     return (
@@ -28,7 +26,7 @@ def _get_task_or_404(db: Session, task_id: UUID) -> models.Task:
     return task
 
 
-# ── CRUD ──────────────────────────────────────────────────────────────────────
+# CRUD 
 
 @router.post("/", response_model=schemas.task.TaskResponse, status_code=status.HTTP_201_CREATED)
 def create_task(
@@ -91,8 +89,6 @@ def delete_task_route(
         raise HTTPException(status_code=404, detail="Tâche introuvable")
 
 
-# ── Specific actions ──────────────────────────────────────────────────────────
-
 @router.patch("/{task_id}/status", response_model=schemas.task.TaskResponse)
 def change_task_status(
     task_id: UUID,
@@ -119,7 +115,7 @@ def assign_task(
     return _get_task_or_404(db, task_id)
 
 
-# ── Audit logs ────────────────────────────────────────────────────────────────
+# Logs
 
 @router.get("/{task_id}/audit-logs", response_model=List[schemas.task.TaskAuditLogResponse])
 def get_task_history(
@@ -137,7 +133,7 @@ def get_task_history(
     )
 
 
-# ── Comments ──────────────────────────────────────────────────────────────────
+# Comments
 
 @router.post("/{task_id}/comments", response_model=schemas.task.TaskCommentResponse, status_code=status.HTTP_201_CREATED)
 def add_comment(
@@ -157,6 +153,7 @@ def add_comment(
     db.commit()
 
     # db.refresh() does NOT load relationships — re-query with joinedload instead
+    #TODO : Revoir le fonctionnement du joinedLoad
     new_comment = (
         db.query(models.TaskComment)
         .options(joinedload(models.TaskComment.author))
@@ -172,7 +169,7 @@ def get_task_comments(
     db: Session = Depends(database.get_db),
     current_user=Depends(security.get_current_user),
 ):
-    _get_task_or_404(db, task_id)  # 404 guard
+    _get_task_or_404(db, task_id)
     return (
         db.query(models.TaskComment)
         .options(joinedload(models.TaskComment.author))
