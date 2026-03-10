@@ -70,7 +70,7 @@ def update_tag(
 def delete_tag(
     tag_id: int,
     db: Session = Depends(database.get_db),
-    current_admin=Depends(security.get_current_admin),
+    current_user=Depends(security.get_current_user),
 ):
     """
     Supprime un tag (admin uniquement).
