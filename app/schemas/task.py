@@ -6,6 +6,7 @@ from uuid import UUID
 from ..models import TaskStatus, TaskPriority, TaskType
 
 
+# ── Tags ──────────────────────────────────────────────────────────────────────
 
 class TagBase(BaseModel):
     name: str
@@ -19,6 +20,9 @@ class TagResponse(TagBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ── User (embedded in responses) ──────────────────────────────────────────────
+# Minimal shape used inside TaskCommentResponse
+# so the frontend doesn't need a second round-trip to resolve author/actor.
 
 class UserEmbedded(BaseModel):
     id: UUID
@@ -27,6 +31,7 @@ class UserEmbedded(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ── Comments ──────────────────────────────────────────────────────────────────
 
 class TaskCommentCreate(BaseModel):
     content: str = Field(..., min_length=1)
@@ -35,7 +40,7 @@ class TaskCommentResponse(BaseModel):
     id: int
     task_id: UUID
     author_id: UUID
-    author: UserEmbedded
+    author: UserEmbedded          # ✅ embedded so frontend gets username directly
     content: str
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -50,6 +55,7 @@ class SubtaskResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ── Tasks ─────────────────────────────────────────────────────────────────────
 
 class TaskBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
@@ -58,15 +64,17 @@ class TaskBase(BaseModel):
     priority: TaskPriority = TaskPriority.MEDIUM
     due_date: Optional[datetime] = None
 
-class TaskCreate(TaskBase):
-    assignee_id: Optional[UUID] = None
-    tag_ids: Optional[List[int]] = []
-
 class SubtaskUpsert(BaseModel):
     id: Optional[int] = None
     title: str
     is_completed: bool = False
     position: int = 0
+
+class TaskCreate(TaskBase):
+    assignee_id: Optional[UUID] = None
+    tag_ids: Optional[List[int]] = []
+    subtasks: Optional[List[SubtaskUpsert]] = []
+
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -90,17 +98,4 @@ class TaskResponse(TaskBase):
     closed_at: Optional[datetime] = None
     tags: List[TagResponse] = []
     subtasks: List[SubtaskResponse] = []
-    model_config = ConfigDict(from_attributes=True)
-
-
-
-class TaskAuditLogResponse(BaseModel):
-    id: int
-    task_id: UUID
-    user_id: UUID
-    actor: UserEmbedded
-    action: str
-    old_value: Optional[str] = None
-    new_value: Optional[str] = None
-    created_at: datetime
     model_config = ConfigDict(from_attributes=True)

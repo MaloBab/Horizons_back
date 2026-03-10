@@ -115,24 +115,6 @@ def assign_task(
     return _get_task_or_404(db, task_id)
 
 
-# Logs
-
-@router.get("/{task_id}/audit-logs", response_model=List[schemas.task.TaskAuditLogResponse])
-def get_task_history(
-    task_id: UUID,
-    db: Session = Depends(database.get_db),
-    current_user=Depends(security.get_current_user),
-):
-    _get_task_or_404(db, task_id)  # 404 guard
-    return (
-        db.query(models.TaskAuditLog)
-        .options(joinedload(models.TaskAuditLog.actor))
-        .filter(models.TaskAuditLog.task_id == task_id)
-        .order_by(models.TaskAuditLog.created_at.asc())
-        .all()
-    )
-
-
 # Comments
 
 @router.post("/{task_id}/comments", response_model=schemas.task.TaskCommentResponse, status_code=status.HTTP_201_CREATED)

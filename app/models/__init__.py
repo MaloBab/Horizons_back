@@ -7,7 +7,7 @@ from .preference import Preference
 from .category import Category
 from .slot import Slot
 from .job import Job
-from .task import Task, TaskComment, Subtask, TaskAttachment, TaskAuditLog, TaskPriority, TaskStatus, TaskType, Tag
+from .task import Task, TaskComment, Subtask, TaskAttachment, TaskPriority, TaskStatus, TaskType, Tag
 
 __all__ = [
     "Base",
@@ -23,7 +23,6 @@ __all__ = [
     "TaskComment",
     "Subtask",
     "TaskAttachment",
-    "TaskAuditLog",
     "Tag",
     "TaskPriority",
     "TaskStatus",

@@ -4,7 +4,7 @@ from .. import schemas, models
 from uuid import UUID
 
 def create_task(db: Session, task_in: schemas.task.TaskCreate, creator_id: str) -> models.Task:
-    task_data = task_in.model_dump(exclude={"tag_ids"}, exclude_none=True)
+    task_data = task_in.model_dump(exclude={"tag_ids", "subtasks"}, exclude_none=True)
 
     db_task = models.Task(**task_data, creator_id=creator_id)
 
@@ -13,17 +13,18 @@ def create_task(db: Session, task_in: schemas.task.TaskCreate, creator_id: str) 
         db_task.tags = tags
 
     db.add(db_task)
+    db.flush()  # obtenir l'id avant d'insérer les subtasks
+
+    if task_in.subtasks:
+        for i, sub in enumerate(task_in.subtasks):
+            db.add(models.Subtask(
+                task_id=db_task.id,
+                title=sub.title,
+                is_completed=sub.is_completed,
+                position=i,
+            ))
     db.commit()
     db.refresh(db_task)
-
-    log = models.TaskAuditLog(
-        task_id=db_task.id,
-        user_id=creator_id,
-        action="task_created",
-        new_value=db_task.status.value,
-    )
-    db.add(log)
-    db.commit()
 
     return db_task
 
@@ -64,27 +65,6 @@ def update_task(
             update_data["closed_at"] = datetime.now(timezone.utc)
         elif new_status == models.TaskStatus.OPEN:
             update_data["closed_at"] = None
-
-    for key, value in update_data.items():
-        old_value = getattr(db_task, key)
-        if old_value != value:
-            setattr(db_task, key, value)
-            db.add(models.TaskAuditLog(
-                task_id=db_task.id,
-                user_id=current_user_id,
-                action=f"{key}_updated",
-                old_value=str(old_value) if old_value is not None else None,
-                new_value=str(value) if value is not None else None,
-            ))
-
-    if task_in.tag_ids is not None:
-        tags = db.query(models.Tag).filter(models.Tag.id.in_(task_in.tag_ids)).all()
-        db_task.tags = tags
-        db.add(models.TaskAuditLog(
-            task_id=db_task.id,
-            user_id=current_user_id,
-            action="tags_updated",
-        ))
 
     if task_in.subtasks is not None:
         for existing in list(db_task.subtasks):

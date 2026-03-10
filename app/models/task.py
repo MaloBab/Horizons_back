@@ -80,7 +80,6 @@ class Task(Base):
     comments    = relationship("TaskComment",     back_populates="task", cascade="all, delete-orphan")
     subtasks    = relationship("Subtask",         back_populates="task", cascade="all, delete-orphan", order_by="Subtask.position")
     attachments = relationship("TaskAttachment",  back_populates="task", cascade="all, delete-orphan")
-    audit_logs  = relationship("TaskAuditLog",    back_populates="task", cascade="all, delete-orphan")
     
     assignee    = relationship("User", foreign_keys=[assignee_id])
 
@@ -143,20 +142,3 @@ class TaskAttachment(Base):
     uploaded_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     task = relationship("Task", back_populates="attachments")
-
-
-class TaskAuditLog(Base):
-    __tablename__ = "task_audit_logs"
-
-    id      = Column(BigInteger, primary_key=True, index=True)
-    task_id = Column(Uuid, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Uuid, ForeignKey("users.id"), nullable=False)
-
-    action    = Column(String, nullable=False)
-    old_value = Column(Text, nullable=True)
-    new_value = Column(Text, nullable=True)
-
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-    task  = relationship("Task", back_populates="audit_logs")
-    actor = relationship("User", foreign_keys=[user_id])

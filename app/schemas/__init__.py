@@ -15,7 +15,7 @@ from .volunteer import VolunteerCreate, VolunteerResponse, VolunteerBase, Volunt
 
 from .assignment import AssignmentCreate, AssignmentResponse, AssignmentBase
 
-from .task import TaskBase, TaskCreate, TaskUpdate, TaskResponse, TaskAuditLogResponse
+from .task import TaskBase, TaskCreate, TaskUpdate, TaskResponse
 
 __all__ = [
     "Token", "UserCreate", "UserUpdate", "UserResponse", "UserRole", "UserBase", "UserShortResponse",
@@ -29,5 +29,5 @@ __all__ = [
     "VolunteerPreferenceCreate", "VolunteerPreferenceResponse", "VolunteerPreferenceBase",
     "VolunteerSlotCreate", "VolunteerSlotResponse", "VolunteerSlotBase",
     "AssignmentCreate", "AssignmentResponse", "AssignmentBase",
-    "TaskBase", "TaskCreate", "TaskUpdate", "TaskResponse", "TaskAuditLogResponse"
+    "TaskBase", "TaskCreate", "TaskUpdate", "TaskResponse"
 ]
