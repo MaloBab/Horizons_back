@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from .. import schemas, models
 from uuid import UUID
 
+
 def create_task(db: Session, task_in: schemas.task.TaskCreate, creator_id: str) -> models.Task:
     task_data = task_in.model_dump(exclude={"tag_ids", "subtasks"}, exclude_none=True)
 
@@ -13,7 +14,7 @@ def create_task(db: Session, task_in: schemas.task.TaskCreate, creator_id: str) 
         db_task.tags = tags
 
     db.add(db_task)
-    db.flush()  # obtenir l'id avant d'insérer les subtasks
+    db.flush()
 
     if task_in.subtasks:
         for i, sub in enumerate(task_in.subtasks):
@@ -23,11 +24,10 @@ def create_task(db: Session, task_in: schemas.task.TaskCreate, creator_id: str) 
                 is_completed=sub.is_completed,
                 position=i,
             ))
+
     db.commit()
     db.refresh(db_task)
-
     return db_task
-
 
 
 def get_task(db: Session, task_id: UUID) -> models.Task | None:
@@ -49,7 +49,6 @@ def get_tasks(
     return query.offset(skip).limit(limit).all()
 
 
-
 def update_task(
     db: Session,
     db_task: models.Task,
@@ -57,6 +56,7 @@ def update_task(
     current_user_id: UUID,
 ) -> models.Task:
     update_data = task_in.model_dump(exclude_unset=True, exclude={"tag_ids", "subtasks"})
+
     if "status" in update_data and update_data["status"] != db_task.status:
         new_status = update_data["status"]
         if new_status == models.TaskStatus.REVIEW:
@@ -65,6 +65,14 @@ def update_task(
             update_data["closed_at"] = datetime.now(timezone.utc)
         elif new_status == models.TaskStatus.OPEN:
             update_data["closed_at"] = None
+
+    # ← LA LIGNE MANQUANTE : appliquer les champs scalaires à l'objet
+    for key, value in update_data.items():
+        setattr(db_task, key, value)
+
+    if task_in.tag_ids is not None:
+        tags = db.query(models.Tag).filter(models.Tag.id.in_(task_in.tag_ids)).all()
+        db_task.tags = tags
 
     if task_in.subtasks is not None:
         for existing in list(db_task.subtasks):
