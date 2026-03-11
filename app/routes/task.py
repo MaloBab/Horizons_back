@@ -1,10 +1,12 @@
+import datetime
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 
 from .. import schemas, models, crud, database
 from ..core import security
+from ..core.google_calendar import export_task_to_calendar, delete_calendar_event, COMMON_CALENDAR_ID
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -80,13 +82,32 @@ def update_task_full(
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task_route(
+def delete_task(
     task_id: UUID,
     db: Session = Depends(database.get_db),
-    current_user=Depends(security.get_current_user),
+    current_user = Depends(security.get_current_user),
 ):
-    if not crud.task.delete_task(db=db, task_id=task_id):
+    db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not db_task:
         raise HTTPException(status_code=404, detail="Tâche introuvable")
+
+    if db_task.google_calendar_event_id is not None and COMMON_CALENDAR_ID:
+        try:
+            delete_calendar_event(COMMON_CALENDAR_ID, str(db_task.google_calendar_event_id))
+        except Exception as e:
+            print(f"Erreur non bloquante lors de la suppression Google : {e}")
+
+    try:
+        db.delete(db_task)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail="Erreur lors de la suppression en base de données"
+        )
+        
+    return None
 
 
 @router.patch("/{task_id}/status", response_model=schemas.task.TaskResponse)
@@ -159,3 +180,61 @@ def get_task_comments(
         .order_by(models.TaskComment.created_at.asc())
         .all()
     )
+
+
+@router.post("/{task_id}/export-calendar")
+def toggle_calendar_export(
+    task_id: UUID,
+    db: Session = Depends(database.get_db),
+    current_user = Depends(security.get_current_user),
+):
+    db_task = db.query(models.Task).filter(models.Task.id == task_id).with_for_update().first()
+    
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Tâche introuvable")
+
+    if COMMON_CALENDAR_ID is None:
+        raise ValueError("Impossible de réccupérer l'ID du calendrier")
+  
+    if db_task.google_calendar_event_id is not None:
+        try:
+            delete_calendar_event(COMMON_CALENDAR_ID, str(db_task.google_calendar_event_id))
+            db_task.google_calendar_event_id = None
+            db.commit()
+            return {"message": "Supprimé de l'agenda", "exported": False}
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Erreur suppression : {e}")
+
+
+    user_colors = ["2", "3", "4", "5", "6", "7", "9", "10", "11"]
+    UNASSIGNED_COLOR = "1"
+    
+    base_title = str(db_task.title)
+    
+
+    if db_task.assignee_id is None:
+        selected_color = UNASSIGNED_COLOR
+        final_title = base_title
+    else:
+
+        color_index = db_task.assignee_id.int % len(user_colors)
+        selected_color = user_colors[color_index]
+        
+        username = db_task.assignee.username if db_task.assignee else "Inconnu"
+        final_title = f"[{username}] {base_title}"
+    
+    try:
+        result = export_task_to_calendar(
+            calendar_id=COMMON_CALENDAR_ID,
+            title=final_title,
+            description=db_task.description,
+            due_date=db_task.due_date,
+            color_id=selected_color 
+        )
+        db_task.google_calendar_event_id = result["id"]
+        db.commit()
+        return {"message": "Ajouté à l'agenda", "exported": True, "link": result["link"]}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,4 +1,5 @@
 import enum
+from typing import Optional
 import uuid
 import nh3
 from datetime import datetime, timezone
@@ -61,8 +62,8 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4, index=True)
-    title       = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     type     = Column(Enum(TaskType),     default=TaskType.STANDARD)
     status   = Column(Enum(TaskStatus),   default=TaskStatus.OPEN)
@@ -71,10 +72,11 @@ class Task(Base):
     creator_id  = Column(Uuid, ForeignKey("users.id"), nullable=False)
     assignee_id = Column(Uuid, ForeignKey("users.id"), nullable=True)
 
-    due_date                = Column(DateTime(timezone=True), nullable=True)
+    due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     opened_at               = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     verification_opened_at  = Column(DateTime(timezone=True), nullable=True)
     closed_at               = Column(DateTime(timezone=True), nullable=True)
+    google_calendar_event_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     tags        = relationship("Tag",             secondary=task_tags_table, back_populates="tasks")
     comments    = relationship("TaskComment",     back_populates="task", cascade="all, delete-orphan")

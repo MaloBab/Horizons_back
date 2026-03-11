@@ -98,4 +98,5 @@ class TaskResponse(TaskBase):
     closed_at: Optional[datetime] = None
     tags: List[TagResponse] = []
     subtasks: List[SubtaskResponse] = []
+    google_calendar_event_id: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)

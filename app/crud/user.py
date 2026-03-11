@@ -3,6 +3,7 @@ from uuid import UUID
 from typing import Optional
 from .. import models, schemas
 from ..core.security import get_password_hash
+from ..core.google_calendar import add_user_to_common_calendar
 
 def get_user(db: Session, user_id: UUID) -> Optional[models.User]:
     """Récupère un utilisateur par son ID unique (UUID)"""
@@ -21,19 +22,25 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.User).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: schemas.UserCreate) -> models.User:
-    """Crée un nouvel utilisateur avec mot de passe haché et rôle 'user' par défaut"""
     hashed_pwd = get_password_hash(user.password)
-    
+    cal_id = None
+    try:
+        add_user_to_common_calendar(user.email)
+        
+    except Exception as e:
+        print(f"Note : Problème d'invitation Google Agenda (Email peut-être invalide) : {e}")
+        
     db_user = models.User(
         username=user.username,
         email=user.email,
         password_hash=hashed_pwd,
         role=models.UserRole.user, 
-        profile_picture_url=user.profile_picture_url
+        profile_picture_url=user.profile_picture_url,
+        calendar_id=cal_id
     )
     
     db.add(db_user)
-    db.commit()
+    db.commit() 
     db.refresh(db_user)
     return db_user
 

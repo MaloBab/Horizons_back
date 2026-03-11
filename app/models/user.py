@@ -18,5 +18,6 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column( Enum(UserRole), default=UserRole.user, nullable=False)
     profile_picture_url = Column(String, nullable=True)
+    calendar_id = Column(String, nullable=True)
     
     activities = relationship("Activity", back_populates="author")
