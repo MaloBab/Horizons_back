@@ -8,7 +8,6 @@ class Activity(Base):
     __tablename__ = "activities"
 
     id = Column(BigInteger, primary_key=True, index=True)
-    icon = Column(String, nullable=True)
     title = Column(String, nullable=False)
     action_type = Column(String, nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)

@@ -6,7 +6,6 @@ from app.schemas.user import UserShortResponse
 
 
 class ActivityBase(BaseModel):
-    icon : Optional[str] = None
     title : str
     action_type : str
 
