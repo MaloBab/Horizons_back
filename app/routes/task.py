@@ -201,7 +201,7 @@ def toggle_calendar_export(
             delete_calendar_event(COMMON_CALENDAR_ID, str(db_task.google_calendar_event_id))
             db_task.google_calendar_event_id = None
             db.commit()
-            return {"message": "Supprimé de l'agenda", "exported": False}
+            return {"message": "Supprimé de l'agenda", "is_exported": False, "link": None}
         except Exception as e:
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Erreur suppression : {e}")
@@ -234,7 +234,7 @@ def toggle_calendar_export(
         )
         db_task.google_calendar_event_id = result["id"]
         db.commit()
-        return {"message": "Ajouté à l'agenda", "exported": True, "link": result["link"]}
+        return {"message": "Ajouté à l'agenda", "is_exported": True, "link": result["link"]}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
