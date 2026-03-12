@@ -8,10 +8,12 @@ from .category import Category
 from .slot import Slot
 from .job import Job
 from .task import Task, TaskComment, Subtask, TaskAttachment, TaskPriority, TaskStatus, TaskType, Tag
+from .festival import Festival
 
 __all__ = [
     "Base",
     "User",
+    "Festival",
     "UserRole",
     "Volunteer",
     "Activity",

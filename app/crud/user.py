@@ -44,6 +44,44 @@ def create_user(db: Session, user: schemas.UserCreate) -> models.User:
     db.refresh(db_user)
     return db_user
 
+#AUTHENTIFICATION GOOGLE
+
+def get_user_by_google_sub(db: Session, google_sub: str) -> Optional[models.User]:
+    """Retrouve un utilisateur par son identifiant unique Google (sub)."""
+    return db.query(models.User).filter(models.User.google_sub == google_sub).first()
+
+
+def link_google_account(db: Session, user: models.User, google_sub: str) -> models.User:
+    """Lie un compte existant (inscription classique) à un compte Google."""
+    setattr(user, "google_sub", google_sub)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def create_oauth_user(db: Session, user_in: schemas.UserCreate, google_sub: str) -> models.User:
+    """
+    Crée un compte sans mot de passe, lié à Google.
+    Tente aussi d'ajouter l'utilisateur au Google Calendar commun.
+    """
+    try:
+        add_user_to_common_calendar(user_in.email)
+    except Exception as e:
+        print(f"Note : Problème d'invitation Google Agenda : {e}")
+
+    db_user = models.User(
+        username=user_in.username,
+        email=user_in.email,
+        password_hash=None,
+        google_sub=google_sub,
+        role=models.UserRole.user,
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
 def update_user(db: Session, user_id: UUID, user_update: schemas.UserUpdate) -> Optional[models.User]:
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     

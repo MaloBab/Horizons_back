@@ -17,8 +17,11 @@ from .assignment import AssignmentCreate, AssignmentResponse, AssignmentBase
 
 from .task import TaskBase, TaskCreate, TaskUpdate, TaskResponse
 
+from .festival import FestivalBase, FestivalCreate, FestivalUpdate, FestivalResponse
+
 __all__ = [
     "Token", "UserCreate", "UserUpdate", "UserResponse", "UserRole", "UserBase", "UserShortResponse",
+    "FestivalBase", "FestivalCreate", "FestivalUpdate", "FestivalResponse",
     "ActivityCreate", "ActivityResponse", "ActivityBase",
     "VolunteerCreate", "VolunteerResponse", "VolunteerBase", "VolunteerShortResponse",
     "CategoryCreate", "CategoryResponse", "CategoryBase",
