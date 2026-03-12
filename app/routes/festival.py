@@ -23,7 +23,7 @@ def read_festival(
 def create_festival(
     festival: schemas.FestivalCreate,
     db: Session = Depends(database.get_db),
-    current_admin: models.User = Depends(get_current_admin),
+    current_user: models.User = Depends(get_current_user),
 ):
     """Crée le festival. Admin uniquement."""
     if crud.festival.get_festival(db):
@@ -35,7 +35,7 @@ def create_festival(
 def update_festival(
     festival_update: schemas.FestivalUpdate,
     db: Session = Depends(database.get_db),
-    current_admin: models.User = Depends(get_current_admin),
+    current_user: models.User = Depends(get_current_user),
 ):
     """Met à jour le festival. Admin uniquement."""
     festival = crud.festival.update_festival(db, festival_update)
