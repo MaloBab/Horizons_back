@@ -25,7 +25,7 @@ def create_festival(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Crée le festival. Admin uniquement."""
+    """Crée le festival."""
     if crud.festival.get_festival(db):
         raise HTTPException(status_code=400, detail="Un festival existe déjà. Utilisez PATCH pour le modifier.")
     return crud.festival.create_festival(db, festival)
@@ -37,7 +37,7 @@ def update_festival(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Met à jour le festival. Admin uniquement."""
+    """Met à jour le festival."""
     festival = crud.festival.update_festival(db, festival_update)
     if not festival:
         raise HTTPException(status_code=404, detail="Aucun festival configuré.")

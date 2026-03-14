@@ -13,6 +13,7 @@ from .routes import user
 from .routes import festival
 from .routes import activity
 from .routes import tags
+from .routes import jobs
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -48,3 +49,4 @@ app.include_router(festival.router)
 app.include_router(activity.router)
 app.include_router(task.router)
 app.include_router(tags.router)
+app.include_router(jobs.router)

@@ -1,10 +1,10 @@
-from sqlalchemy import Column, Integer
+from sqlalchemy.orm import mapped_column, Mapped
 from .base import Base
 
 class Slot(Base):
     __tablename__ = "slots"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    day_of_week = Column(Integer, nullable=False)
-    start_hour = Column(Integer, nullable=False)
-    end_hour = Column(Integer, nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+    day_index: Mapped[int]
+    start_time: Mapped[int]
+    end_time: Mapped[int]

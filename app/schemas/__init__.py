@@ -2,10 +2,10 @@ from .token import Token
 
 from .user import UserCreate, UserUpdate, UserResponse, UserRole, UserBase, UserShortResponse
 from .activity import ActivityCreate, ActivityResponse, ActivityBase
-from .category import CategoryCreate, CategoryResponse, CategoryBase
-from .slot import SlotCreate, SlotResponse, SlotBase
+from .job import JobBase, JobCreate, JobUpdate, JobResponse, CategoryGroupResponse
+from .category import CategoryBase, CategoryResponse, CategoryCreate
+from .slot import SlotBase, SlotResponse, SlotCreate
 from .preference import PreferenceCreate, PreferenceResponse, PreferenceBase
-from .job import JobCreate, JobResponse, JobBase
 
 from .volunteer_mate import VolunteerMateCreate, VolunteerMateResponse, VolunteerMateBase
 from .volunteer_preference import VolunteerPreferenceCreate, VolunteerPreferenceResponse, VolunteerPreferenceBase
@@ -25,7 +25,7 @@ __all__ = [
     "ActivityCreate", "ActivityResponse", "ActivityBase",
     "VolunteerCreate", "VolunteerResponse", "VolunteerBase", "VolunteerShortResponse",
     "CategoryCreate", "CategoryResponse", "CategoryBase",
-    "JobCreate", "JobResponse", "JobBase",
+    "JobCreate", "JobResponse", "JobBase", "JobUpdate", "CategoryGroupResponse",
     "SlotCreate", "SlotResponse", "SlotBase",
     "PreferenceCreate", "PreferenceResponse", "PreferenceBase",
     "VolunteerMateCreate", "VolunteerMateResponse", "VolunteerMateBase",
